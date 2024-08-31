@@ -1,3 +1,7 @@
+// since `.js, .ts` files are not included by default,
+// the following comment tells UnoCSS to force scan this file (to pick the logo icon).
+// @unocss-include
+
 export default {
   name: 'Vue Designer',
   description: 'Vue Designer Nuxt Vuetify - Quick start template',
@@ -13,8 +17,12 @@ export default {
   trailingSlash: false, // default
   titleSeparator: '|', // default
   nav: [
-    { text: 'Home', link: '/', type: 'primary', icon: 'i-mdi-home' },
-    { text: 'Store', link: '/store', type: 'primary', icon: 'i-mdi-home' },
+    {
+      text: 'Home',
+      link: '/',
+      type: 'primary',
+      icon: 'i-mdi-home',
+    },
     {
       text: 'Quick Start',
       link: '/quick-start',
@@ -24,7 +32,7 @@ export default {
     {
       text: 'Subscribe',
       link: '/subscribe',
-      type: 'primary',
+      type: 'secondary',
       icon: 'i-mdi-home',
     },
   ],

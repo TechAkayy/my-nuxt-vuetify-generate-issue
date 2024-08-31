@@ -1,13 +1,13 @@
 {
   "$schema": "http://json.schemastore.org/web-types",
   "name": "project",
-  "framework": "vue",
+  "framework": "project",
   "version": "0.0.0",
   "contributions": {
     "html": {
       "elements": [
         {
-          "name": "BaseImage",
+          "name": "VNuxtImage",
           "description": "A simple wrapper of v-img that optimizes the image source by default.",
           "attributes": [
             {
@@ -71,7 +71,7 @@
       "attributes": [
         {
           "name": "color",
-          "customType": "color",
+          "customType": "select",
           "options": []
         }
       ]

@@ -1,5 +1,7 @@
-// import { fileURLToPath, URL } from 'node:url'
-// import presetIcons from '@unocss/preset-icons'
+import { fileURLToPath, URL } from 'node:url'
+import { resolve } from 'pathe'
+import presetIcons from '@unocss/preset-icons'
+import { bundledLanguages } from 'shiki'
 
 import site from './site'
 const {
@@ -14,11 +16,35 @@ const {
 } = site
 
 export default defineNuxtConfig({
+  extends: [
+    './app-nuxt-vuetify-layer', // NavBar and Footer components
+  ],
   // ssr: false,
-  devtools: { enabled: false }, // Disable when using Vue devtools
+  // devtools: { enabled: false }, // enabled by default, disable when using standalone Vue devtools
+
+  // Preparation for Nuxt 4 migration
+  future: {
+    compatibilityVersion: 4,
+  },
+
+  // Before Nuxt 4 migration
+  // srcDir: 'app',
+  // serverDir: fileURLToPath(new URL('server', import.meta.url)),
+  // dir: {
+  //   public: fileURLToPath(new URL('public', import.meta.url)),
+  //   modules: fileURLToPath(new URL('modules', import.meta.url)),
+  // },
 
   experimental: {
     componentIslands: true,
+  },
+
+  // nitro: {
+  //   preset: 'netlify-static',
+  // },
+
+  build: {
+    transpile: ['shiki'], // Workaround as per https://github.com/nuxt/nuxt/issues/28127
   },
 
   app: {
@@ -32,7 +58,6 @@ export default defineNuxtConfig({
   modules: [
     '@pinegrow/nuxt-module',
     '@unocss/nuxt',
-    '@nuxt/devtools',
     '@nuxt/content',
     '@vueuse/nuxt',
     '@pinia/nuxt',
@@ -40,15 +65,19 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@vee-validate/nuxt',
     'vuetify-nuxt-module',
-    '@nuxtseo/module',
-    '@nuxtjs/fontaine',
+    '@nuxtjs/seo',
+    // '@nuxtjs/fontaine', // blocked by https://github.com/nuxt-modules/fontaine/issues/342
     '@nuxtjs/critters',
-    'nuxt-icon',
+    // '@nuxt/icon', // Enable once nuxt-icon is removed
+    'nuxt-icon', // To be replaced with @nuxt-icon (above), once NuxtSEO drops using this.
+    '@nuxt/eslint',
   ],
+
   // https://dev.to/jacobandrewsky/improving-performance-of-nuxt-with-fontaine-5dim
-  fontMetrics: {
-    fonts: ['Inter', 'Kalam'],
-  },
+  // blocked by https://github.com/nuxt-modules/fontaine/issues/342
+  // fontMetrics: {
+  //   fonts: ['Inter', 'Kalam'],
+  // },
 
   // https://dev.to/jacobandrewsky/optimizing-css-performance-in-nuxt-with-critters-4k8i
   critters: {
@@ -59,26 +88,34 @@ export default defineNuxtConfig({
     },
   },
 
+  /* Enable once nuxt-icon is removed */
+  // icon: {
+  //   componentName: 'NuxtIcon', // Instead of NuxtIcon, prefer using v-icon that uses unocss-icons which is more efficient
+  //   serverBundle: {
+  //     collections: ['vscode-icons', 'mdi', 'logos'],
+  //   },
+  // },
+
   // Vuetify's global styles
   css: [
-    '~/assets/css/main.css', // Used for global styles. This file is generally configured as cssPath with Pinegrow Vuetify Plugin
-    '~/assets/vuetify/main.scss', // If customizing Vuetify sass variables
+    '@/assets/css/main.css', // Used for global styles. This file is generally configured as cssPath with Pinegrow Vuetify Plugin
+    '@/assets/vuetify/main.scss', // If customizing Vuetify global sass variables, ensure disableVuetifyStyles: true with Nuxt Vuetity module
     'lite-youtube-embed/src/lite-yt-embed.css',
   ],
 
   // Vuetify Nuxt module, thanks Joaquín (userquin)
   vuetify: {
     moduleOptions: {
+      /* If customizing sass global variables ($utilities, $reset, $color-pack, $body-font-family, etc) */
+      disableVuetifyStyles: true,
       /* If customizing sass variables of vuetify components */
-      /* If enabling this, set experimental.inlineSSRStyles to false */
-      // styles: {
-      //   configFile: 'assets/vuetify/settings.scss',
-      // },
+      styles: {
+        configFile: 'assets/vuetify/settings.scss',
+      },
+
       includeTransformAssetsUrls: {
         NuxtImg: ['src'],
         OgImage: ['image'],
-        'v-carousel-item': ['src', 'lazySrc', 'srcset'],
-        'v-card': ['image', 'prependAvatar', 'appendAvatar'],
       },
 
       ssrClientHints: {
@@ -94,11 +131,6 @@ export default defineNuxtConfig({
 
     vuetifyOptions: './vuetify.config.ts', // This file is generally configured as configPath with Pinegrow Vuetify Plugin
   },
-
-  // Required when customizing Vuetify sass variables via configFile with SSR enabled - https://vuetify-nuxt-module.netlify.app/guide/server-side-rendering.html#vuetify-sass-variables
-  // experimental: {
-  //   inlineSSRStyles: false,
-  // },
 
   image: {
     // dir: 'assets/images', // doesn't always work, for eg, with vercel etc, https://github.com/nuxt/image/issues/1006. Therefore, we are storing the images in public folder, to have them not processed by vite, but rather by nuxt-image module on-demand
@@ -116,6 +148,11 @@ export default defineNuxtConfig({
     //   xxl: 1536,
     //   '2xl': 1536,
     // },
+
+    // TODO: Currently image optimization is paused until some bugs in Nuxt Image modules are fixed
+    // provider: 'ipx',
+    provider: 'none',
+
     presets: {
       avatar: {
         modifiers: {
@@ -125,9 +162,9 @@ export default defineNuxtConfig({
         },
       },
     },
-    netlify: {
-      baseURL: url,
-    },
+    // netlify: {
+    //   baseURL: url,
+    // },
     domains: [
       'images.unsplash.com',
       'fakestoreapi.com',
@@ -154,6 +191,13 @@ export default defineNuxtConfig({
   },
 
   content: {
+    // Before Nuxt 4 migration
+    sources: {
+      content: {
+        driver: 'fs',
+        base: resolve(__dirname, 'app/content'),
+      },
+    },
     markdown: {
       anchorLinks: false,
       rehypePlugins: [
@@ -168,22 +212,18 @@ export default defineNuxtConfig({
       ],
     },
     highlight: {
+      //@ts-ignore
+      langs: Object.keys(bundledLanguages),
       theme: 'dracula-soft',
     },
   },
 
   pinia: {
-    autoImports: [
-      // automatically imports `defineStore`
-      'defineStore', // import { defineStore } from 'pinia'
-      ['defineStore', 'definePiniaStore'], // import { defineStore as definePiniaStore } from 'pinia'
-      'storeToRefs',
-      'acceptHMRUpdate',
-    ],
+    storesDirs: ['./stores/**'],
   },
 
   imports: {
-    dirs: ['stores'],
+    // dirs: ['my-components'],
   },
 
   vue: {
@@ -198,10 +238,10 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/hidden': { index: false },
+    '/hidden': { robots: false },
   },
 
-  // Used by all modules in the @nuxtseo/module collection
+  // Used by all modules in the @nuxtjs/seo collection
   // https://nuxtseo.com/nuxt-seo/guides/configuring-modules
   site: {
     url,
@@ -220,7 +260,7 @@ export default defineNuxtConfig({
   },
   sitemap: {
     // https://nuxtseo.com/sitemap/guides/i18n#debugging-hreflang
-    // Open https://the-ai-cafe.netlify.app/sitemap.xml
+    // Open {{site.url}}/sitemap.xml
     xslColumns: [
       { label: 'URL', width: '50%' },
       { label: 'Last Modified', select: 'sitemap:lastmod', width: '12.5%' },
@@ -238,16 +278,13 @@ export default defineNuxtConfig({
     strictNuxtContentPaths: true,
   },
   ogImage: {
-    // Open https://the-ai-cafe.netlify.app/__og_image__/og.png
-    // defaults: {
-    //   cacheTtl: 60 * 60 * 24 * 7, // 7 days
-    // },
+    // OG images and nuxtseo features can be previewed with nuxt-devtools during development. OG images can also be viewed using URL in this form - `/__og-image__/image/<path>/og.<extension>. For eg, {{site.url}}/__og-image__/image/og.png
+    // fonts: ['Inter:400', 'Inter:700'],
+    //
+    // defaults: { width: 1200, height: 600, emojis: 'noto', renderer: 'satori', component: 'NuxtSeo', cacheMaxAgeSeconds: 60 * 60 * 24 * 3 },
+    //
     // disable at a global level
     // runtimeCacheStorage: false,
-    // or
-    // defaults: {
-    //   cache: false,
-    // },
   },
   linkChecker: {
     enabled: false,
@@ -258,10 +295,33 @@ export default defineNuxtConfig({
     },
   },
 
+  unocss: {
+    presets: [
+      presetIcons({
+        prefix: 'i-', // default prefix, do not change
+      }),
+    ],
+  },
+
+  eslint: {
+    // config: {
+    //   stylistic: {
+    //     // All are default values
+    //     semi: false,
+    //     quotes: 'single',
+    //     blockSpacing: true,
+    //     indent: 2,
+    //     commaDangle: 'always-multiline',
+    //     // ...
+    //   },
+    // },
+    // ...
+  },
+
   pinegrow: {
     liveDesigner: {
       iconPreferredCase: 'unocss', // default value (can be removed), vuetify-nuxt-module uses the unocss format for icon names
-      devtoolsKey: 'devtools', // see plugins/devtools.client.ts
+      devtoolsKey: 'devtoolsKey', // see plugins/devtools.client.ts
       vuetify: {
         /* Please ensure that you update the filenames and paths to accurately match those used in your project. */
         configPath: 'vuetify.config.ts', // or file where vuetify is created
@@ -275,7 +335,7 @@ export default defineNuxtConfig({
       //     name: 'My Awesome Lib 3.0',
       //     key: 'my-awesome-lib',
       //     pluginPath: fileURLToPath(
-      //       new URL('./my-awesome-lib/web-types.json', import.meta.url),
+      //       new URL('./web-types/my-awesome-lib.json', import.meta.url),
       //     ),
       //   },
       // ],
